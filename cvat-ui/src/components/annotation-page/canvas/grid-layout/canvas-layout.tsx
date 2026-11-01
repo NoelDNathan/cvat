@@ -156,9 +156,12 @@ function CanvasLayout({ type }: { type?: DimensionType }): JSX.Element {
 
     const computeRowHeight = (): number => {
         const container = window.document.getElementsByClassName('cvat-annotation-header')[0];
+        // the track timeline panel is placed below the canvas in the standard workspace
+        const timeline = window.document.getElementsByClassName('cvat-track-timeline')[0];
         let containerHeight = window.innerHeight;
         if (container) {
-            containerHeight = window.innerHeight - container.getBoundingClientRect().bottom;
+            containerHeight = window.innerHeight - container.getBoundingClientRect().bottom -
+                (timeline ? timeline.getBoundingClientRect().height : 0);
             // https://github.com/react-grid-layout/react-grid-layout/issues/628#issuecomment-1228453084
             return Math.floor(
                 (containerHeight - config.CANVAS_WORKSPACE_MARGIN * (config.CANVAS_WORKSPACE_ROWS)) /

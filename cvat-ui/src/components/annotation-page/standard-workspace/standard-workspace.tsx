@@ -17,6 +17,7 @@ import IssueAggregatorComponent from 'components/annotation-page/review/issues-a
 import RemoveConfirmComponent from 'components/annotation-page/standard-workspace/remove-confirm';
 import PropagateConfirmComponent from 'components/annotation-page/standard-workspace/propagate-confirm';
 import BrushTools from 'components/annotation-page/canvas/views/canvas2d/brush-tools';
+import TrackTimeline from 'components/annotation-page/standard-workspace/track-timeline/track-timeline';
 import { TrackerControlsProvider } from './tracker-controls';
 
 export default function StandardWorkspaceComponent(): JSX.Element {
@@ -24,7 +25,10 @@ export default function StandardWorkspaceComponent(): JSX.Element {
         <TrackerControlsProvider>
             <Layout hasSider className='cvat-standard-workspace'>
                 <ControlsSideBarContainer />
-                <CanvasLayout />
+                <Layout className='cvat-standard-workspace-center'>
+                    <CanvasLayout />
+                    <TrackTimeline />
+                </Layout>
                 <BrushTools />
                 <ObjectSideBarComponent objectsList={<ObjectsListContainer />} />
                 <PropagateConfirmComponent />
