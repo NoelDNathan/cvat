@@ -15,7 +15,7 @@ import Text from 'antd/lib/typography/Text';
 
 import { Attribute, Label } from 'cvat-core-wrapper';
 import { Chapter } from 'cvat-core/src/frames';
-import { ActiveControl, CombinedState } from 'reducers';
+import { ActiveControl, ColorBy, CombinedState } from 'reducers';
 import { activateObject, changeFrameAsync, switchPlay } from 'actions/annotation-actions';
 import { registerComponentShortcuts } from 'actions/shortcuts-actions';
 import { getCVATStore } from 'cvat-store';
@@ -88,7 +88,7 @@ const sortOptions: { value: TimelineSortMode; label: string }[] = [
 function TrackTimeline(): JSX.Element {
     const dispatch = useDispatch<ThunkDispatch>();
     const {
-        frame, playing, activatedStateID, startFrame, stopFrame, chapters, labels, keyMap, normalizedKeyMap,
+        frame, playing, activatedStateID, startFrame, stopFrame, chapters, labels, colorBy, keyMap, normalizedKeyMap,
     } = useSelector((state: CombinedState) => ({
         frame: state.annotation.player.frame.number,
         playing: state.annotation.player.playing,
@@ -97,6 +97,7 @@ function TrackTimeline(): JSX.Element {
         stopFrame: state.annotation.job.instance?.stopFrame ?? 0,
         chapters: state.annotation.job.meta?.chapters ?? null,
         labels: state.annotation.job.labels,
+        colorBy: state.settings.shapes.colorBy,
         keyMap: state.shortcuts.keyMap,
         normalizedKeyMap: state.shortcuts.normalizedKeyMap,
     }), shallowEqual);
@@ -110,7 +111,23 @@ function TrackTimeline(): JSX.Element {
 
     const { open } = settings;
     const height = open ? clamp(settings.height, MIN_HEIGHT, maxHeight()) : HEADER_HEIGHT;
-    const { rows, deletedRanges } = useTimelineRows(open, attributeName);
+    const { rows, deletedRanges, colors } = useTimelineRows(open, attributeName);
+
+    // the same colors as in the objects sidebar
+    const coloredRows = useMemo(() => {
+        if (colorBy === ColorBy.LABEL) {
+            return rows;
+        }
+
+        return rows.map((row) => {
+            const objectColors = colors.get(row.clientID);
+            if (!objectColors) {
+                return row;
+            }
+
+            return { ...row, color: colorBy === ColorBy.INSTANCE ? objectColors.instance : objectColors.group };
+        });
+    }, [rows, colors, colorBy]);
 
     const attributeOptions = useMemo(() => {
         const names = new Set<string>();
@@ -120,7 +137,7 @@ function TrackTimeline(): JSX.Element {
         return [...names].sort().map((name) => ({ value: name, label: name }));
     }, [labels]);
 
-    const sortedRows = useMemo(() => sortRows(rows, sortMode), [rows, sortMode]);
+    const sortedRows = useMemo(() => sortRows(coloredRows, sortMode), [coloredRows, sortMode]);
     const queriedRows = useMemo(() => filterRows(sortedRows, query), [sortedRows, query]);
     const visibleRows = useMemo(() => (
         onlyVisible ? filterRows(queriedRows, '', frame) : queriedRows

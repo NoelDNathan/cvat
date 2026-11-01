@@ -7,8 +7,12 @@ import {
 } from 'react';
 import { useSelector } from 'react-redux';
 
-import { Attribute, Label } from 'cvat-core-wrapper';
-import { CombinedState } from 'reducers';
+import {
+    Attribute, Label, ObjectState, ObjectType,
+} from 'cvat-core-wrapper';
+import { getCVATStore } from 'cvat-store';
+import { ColorBy, CombinedState } from 'reducers';
+import { getObjectStateColor } from 'components/annotation-page/standard-workspace/objects-side-bar/shared';
 import { shallowEqual } from 'utils/redux';
 import {
     TimelineLabelInput, TimelineRange, TimelineRow, buildTimelineRows, framesToRanges,
@@ -16,9 +20,16 @@ import {
 
 const RECOMPUTE_DEBOUNCE_MS = 300;
 
+export interface TimelineObjectColors {
+    instance: string;
+    group: string;
+}
+
 interface TimelineData {
     rows: TimelineRow[];
     deletedRanges: TimelineRange[];
+    // by clientID, rows keep the label color
+    colors: Map<number, TimelineObjectColors>;
     ready: boolean;
 }
 
@@ -58,7 +69,9 @@ export default function useTimelineRows(enabled: boolean, attributeName: string 
     }), shallowEqual);
 
     const version = useAnnotationsVersion();
-    const [data, setData] = useState<TimelineData>({ rows: [], deletedRanges: [], ready: false });
+    const [data, setData] = useState<TimelineData>({
+        rows: [], deletedRanges: [], colors: new Map(), ready: false,
+    });
     const computed = useRef(false);
 
     const timelineLabels = useMemo((): TimelineLabelInput[] => labels.map((label: Label) => ({
@@ -80,16 +93,28 @@ export default function useTimelineRows(enabled: boolean, attributeName: string 
         const timeout = window.setTimeout(async () => {
             const { startFrame, stopFrame } = jobInstance;
             const { tracks } = await jobInstance.annotations.export();
+            // instance and group colors are not serialized, take them from the states of all the tracks
+            const { number: currentFrame } = getCVATStore().getState().annotation.player.frame;
+            const states: ObjectState[] = await jobInstance.annotations.get(currentFrame, true, []);
             if (cancelled) {
                 return;
             }
+
+            const colors = new Map(states
+                .filter((state: ObjectState) => state.objectType === ObjectType.TRACK)
+                .map((state: ObjectState) => [state.clientID as number, {
+                    instance: getObjectStateColor(state, ColorBy.INSTANCE).hex,
+                    group: getObjectStateColor(state, ColorBy.GROUP).hex,
+                }]));
 
             const rows = buildTimelineRows(tracks, timelineLabels, startFrame, stopFrame, attributeName);
             const deletedFrames = Object.keys(meta?.deletedFrames ?? {})
                 .map((frame) => +frame)
                 .filter((frame) => frame >= startFrame && frame <= stopFrame);
             computed.current = true;
-            setData({ rows, deletedRanges: framesToRanges(deletedFrames), ready: true });
+            setData({
+                rows, deletedRanges: framesToRanges(deletedFrames), colors, ready: true,
+            });
         }, computed.current ? RECOMPUTE_DEBOUNCE_MS : 0);
 
         return () => {
