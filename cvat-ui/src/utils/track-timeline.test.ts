@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import type { TimelineKeyframe, TimelineRow, TimelineTrackInput } from './track-timeline.ts';
 import {
     buildTimelineRows, computeSegments, filterRows, findSegment, frameToX, framesToRanges, isAliveAt,
-    mergeSegments, nearestAliveFrame, rulerStep, segmentsInRange, sortRows, xToFrame,
+    keyframesInRange, mergeSegments, nearestAliveFrame, rulerStep, segmentsInRange, sortRows, xToFrame,
 } from './track-timeline.ts';
 
 const visible = (frame: number): TimelineKeyframe => ({ frame, outside: false, occluded: false });
@@ -131,6 +131,12 @@ describe('lookups', () => {
         assert.deepEqual(segmentsInRange(segments, 19, 40), segments);
         assert.deepEqual(segmentsInRange(segments, 20, 39), []);
         assert.deepEqual(segmentsInRange(segments, 45, 1000), [segments[1]]);
+    });
+
+    it('keyframesInRange', () => {
+        assert.deepEqual(keyframesInRange([0, 10, 20, 30], 10, 25), [10, 20]);
+        assert.deepEqual(keyframesInRange([0, 10, 20, 30], 31, 40), []);
+        assert.deepEqual(keyframesInRange([], 0, 40), []);
     });
 });
 

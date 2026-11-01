@@ -144,7 +144,7 @@ export function findSegment(segments: TimelineSegment[], frame: number): number 
     let left = 0;
     let right = segments.length - 1;
     while (left <= right) {
-        const middle = (left + right) >> 1;
+        const middle = Math.floor((left + right) / 2);
         const segment = segments[middle];
         if (frame < segment.start) {
             right = middle - 1;
@@ -186,7 +186,7 @@ export function segmentsInRange(segments: TimelineSegment[], from: number, to: n
     let left = 0;
     let right = segments.length;
     while (left < right) {
-        const middle = (left + right) >> 1;
+        const middle = Math.floor((left + right) / 2);
         if (segments[middle].stop < from) {
             left = middle + 1;
         } else {
@@ -197,6 +197,27 @@ export function segmentsInRange(segments: TimelineSegment[], from: number, to: n
     const result: TimelineSegment[] = [];
     for (let i = left; i < segments.length && segments[i].start <= to; i++) {
         result.push(segments[i]);
+    }
+
+    return result;
+}
+
+// sorted frames within [from, to], found with binary search
+export function keyframesInRange(keyframes: number[], from: number, to: number): number[] {
+    let left = 0;
+    let right = keyframes.length;
+    while (left < right) {
+        const middle = Math.floor((left + right) / 2);
+        if (keyframes[middle] < from) {
+            left = middle + 1;
+        } else {
+            right = middle;
+        }
+    }
+
+    const result: number[] = [];
+    for (let i = left; i < keyframes.length && keyframes[i] <= to; i++) {
+        result.push(keyframes[i]);
     }
 
     return result;
