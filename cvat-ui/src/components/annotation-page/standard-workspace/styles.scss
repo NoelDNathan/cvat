@@ -13,6 +13,17 @@
     }
 }
 
+.cvat-standard-workspace-center.ant-layout {
+    flex-direction: column;
+    min-width: 0;
+
+    > .ant-layout-content {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden hidden;
+    }
+}
+
 .cvat-objects-sidebar-sider {
     top: 0;
     right: 0;

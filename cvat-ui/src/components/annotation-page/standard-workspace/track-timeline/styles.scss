@@ -1,0 +1,227 @@
+// Copyright (C) CVAT.ai Corporation
+//
+// SPDX-License-Identifier: MIT
+
+@import 'base';
+
+.cvat-track-timeline {
+    position: relative;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    background: $background-color-1;
+    border-top: 1px solid $header-color;
+    user-select: none;
+
+    &.cvat-track-timeline-dragging {
+        cursor: row-resize;
+    }
+}
+
+.cvat-track-timeline-resize-handle {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: row-resize;
+    z-index: 3;
+
+    &:hover {
+        background: rgba($border-color-hover, 0.25);
+    }
+}
+
+.cvat-track-timeline-header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: $grid-unit-size;
+    padding: 0 $grid-unit-size;
+    background: $background-color-2;
+    border-bottom: 1px solid $border-color-1;
+    overflow: hidden;
+    white-space: nowrap;
+
+    .cvat-track-timeline-sort {
+        width: $grid-unit-size * 18;
+    }
+
+    .cvat-track-timeline-filter {
+        width: $grid-unit-size * 22;
+    }
+
+    .cvat-track-timeline-attribute {
+        width: $grid-unit-size * 18;
+    }
+
+    .cvat-track-timeline-toggle {
+        margin-left: auto;
+        padding: 0 $grid-unit-size;
+        cursor: pointer;
+    }
+}
+
+.cvat-track-timeline-collapsed .cvat-track-timeline-header {
+    border-bottom: none;
+}
+
+.cvat-track-timeline-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.cvat-track-timeline-ruler-wrapper {
+    flex: none;
+    display: flex;
+    border-bottom: 1px solid $border-color-1;
+    background: $background-color-1;
+}
+
+.cvat-track-timeline-ruler {
+    display: block;
+    cursor: pointer;
+
+    .cvat-track-timeline-tick,
+    .cvat-track-timeline-tick-minor {
+        stroke: $player-slider-color;
+        stroke-width: 1;
+    }
+
+    .cvat-track-timeline-tick-minor {
+        stroke-opacity: 0.5;
+    }
+
+    .cvat-track-timeline-tick-label {
+        font-size: 10px;
+        fill: $text-color-secondary;
+    }
+
+    .cvat-track-timeline-chapter-0 {
+        fill: rgba($slider-color, 0.5);
+    }
+
+    .cvat-track-timeline-chapter-1 {
+        fill: rgba($slider-color, 0.25);
+    }
+}
+
+.cvat-track-timeline-rows-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+}
+
+.cvat-track-timeline-rows {
+    position: relative;
+    display: flex;
+}
+
+.cvat-track-timeline-labels {
+    position: relative;
+    flex: none;
+    border-right: 1px solid $border-color-1;
+}
+
+.cvat-track-timeline-label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: $grid-unit-size * 0.75;
+    padding: 0 $grid-unit-size;
+    font-size: 12px;
+    line-height: 20px;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+
+    &.cvat-track-timeline-label-hidden {
+        color: $text-color-secondary;
+    }
+
+    .cvat-track-timeline-label-color {
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1px solid $object-item-border-color;
+    }
+
+    .cvat-track-timeline-label-id {
+        flex: none;
+        font-family: $monospaced-fonts-stack;
+    }
+
+    .cvat-track-timeline-label-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.cvat-track-timeline-label.cvat-track-timeline-row-hovered {
+    background: $hover-menu-color;
+}
+
+.cvat-track-timeline-label.cvat-track-timeline-row-active {
+    background: $active-label-background-color;
+}
+
+.cvat-track-timeline-rows-svg {
+    display: block;
+    flex: none;
+    cursor: pointer;
+
+    .cvat-track-timeline-row-background {
+        fill: transparent;
+    }
+
+    .cvat-track-timeline-row-hovered .cvat-track-timeline-row-background {
+        fill: $hover-menu-color;
+    }
+
+    .cvat-track-timeline-row-active .cvat-track-timeline-row-background {
+        fill: $active-label-background-color;
+    }
+
+    .cvat-track-timeline-bar {
+        stroke: rgba(0, 0, 0, 25%);
+        stroke-width: 0.5;
+    }
+
+    .cvat-track-timeline-bar-occluded {
+        pointer-events: none;
+    }
+
+    .cvat-track-timeline-keyframe {
+        fill: $background-color-1;
+        stroke: $player-buttons-color;
+        stroke-width: 1;
+    }
+
+    .cvat-track-timeline-deleted-frames {
+        fill: $layout-sm-grid-color;
+    }
+}
+
+.cvat-track-timeline-playhead {
+    stroke: $danger-icon-color;
+    stroke-width: 1;
+    pointer-events: none;
+}
+
+.cvat-track-timeline-playhead-head {
+    fill: $danger-icon-color;
+    pointer-events: none;
+}
+
+.cvat-track-timeline-horizontal-scroll {
+    flex: none;
+    overflow: auto hidden;
+    scrollbar-width: thin;
+}

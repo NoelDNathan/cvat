@@ -266,6 +266,8 @@ export default [
             'cvat-ui/exec-scripts-webpack-plugin.cjs',
             'cvat-ui/src/assets/opencv*.js',
             'cvat-core/tests/**/*.cjs',
+            // plain Node tests (node --test), they are not a part of the UI TypeScript project
+            'cvat-ui/src/**/*.test.ts',
             'cvat-data/src/ts/3rdparty/**',
         ],
     },
