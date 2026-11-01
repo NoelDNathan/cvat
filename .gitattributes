@@ -12,7 +12,7 @@
 *.yml           text
 Dockerfile      text
 LICENSE         text
-*.conf          text
+*.conf          text eol=lf
 *.mimetypes     text
 *.sh            text eol=lf
 
