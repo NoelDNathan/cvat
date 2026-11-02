@@ -6,6 +6,9 @@
 // Only the box headers and the "moov" box are read, so it works for big files with "moov" at the end.
 // The file intentionally has no imports and no enums, so it can be tested with plain Node (type stripping).
 
+/* eslint-disable no-bitwise */
+// codec configuration records pack several fields into single bytes, bit operations are required to read them
+
 export interface Mp4VideoInfo {
     width: number;
     height: number;
@@ -136,11 +139,6 @@ function path(view: DataView, parent: Box, types: string[]): Box | null {
     }
 
     return current;
-}
-
-// reads a 32 or 64 bit value of a full box depending on its version
-function readVersioned(view: DataView, offset: number, version: number): number {
-    return version === 1 ? Number(view.getBigUint64(offset)) : view.getUint32(offset);
 }
 
 function readEntries(view: DataView, box: Box | null, signed = false): [number, number][] {

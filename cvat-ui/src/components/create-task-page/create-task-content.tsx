@@ -22,6 +22,7 @@ import { getFileContentType, getContentTypeRemoteFile, getFileNameFromPath } fro
 
 import { FrameSelectionMethod } from 'components/create-job-page/job-form';
 import { formFieldsError } from 'utils/validation';
+import { FrameRangeFormValues } from 'utils/video-sampling';
 import BasicConfigurationForm, { BaseConfiguration } from './basic-configuration-form';
 import ProjectSearchField from './project-search-field';
 import ProjectSubsetField from './project-subset-field';
@@ -33,6 +34,7 @@ import AdvancedConfigurationForm, {
     SortingMethod,
 } from './advanced-configuration-form';
 import QualityConfigurationForm, { QualityConfiguration, ValidationMode } from './quality-configuration-form';
+import VideoSampling from './video-sampling/video-sampling';
 
 type TabName = 'local' | 'share' | 'remote' | 'cloudStorage';
 const core = getCore();
@@ -65,6 +67,8 @@ type State = CreateTaskData & {
     multiTasks: (CreateTaskData & {
         status: 'pending' | 'progress' | 'failed' | 'completed' | 'cancelled';
     })[];
+    // mirror of the frame range fields of the advanced configuration form, for the video sampling block
+    frameRange: FrameRangeFormValues;
     uploadFileErrorMessage: string;
     loading: boolean;
     statusInProgressTask: string;
@@ -93,6 +97,7 @@ const defaultState: State = {
     activeFileManagerTab: 'local',
     cloudStorageId: null,
     multiTasks: [],
+    frameRange: {},
     uploadFileErrorMessage: '',
     loading: false,
     statusInProgressTask: '',
@@ -312,6 +317,15 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                 frameSelectionMethod: value,
             },
         }));
+    };
+
+    private handleVideoSamplingChange = (frameRange: FrameRangeFormValues): void => {
+        this.setState({ frameRange });
+        this.advancedConfigurationComponent.current?.setFrameRange(frameRange);
+    };
+
+    private handleFormFrameRangeChange = (frameRange: FrameRangeFormValues): void => {
+        this.setState({ frameRange });
     };
 
     private focusToForm = (): void => {
@@ -888,6 +902,27 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
         );
     }
 
+    private renderVideoSamplingBlock(): JSX.Element | null {
+        const { many } = this.props;
+        const { activeFileManagerTab, files, frameRange } = this.state;
+
+        const mediaFiles = files.local.filter((file: File) => !file.name.endsWith('.jsonl'));
+        if (many || activeFileManagerTab !== 'local' || mediaFiles.length !== 1 ||
+            getFileContentType(mediaFiles[0]) !== SupportedShareTypes.VIDEO) {
+            return null;
+        }
+
+        return (
+            <Col span={24}>
+                <VideoSampling
+                    file={mediaFiles[0]}
+                    frameRange={frameRange}
+                    onChange={this.handleVideoSamplingChange}
+                />
+            </Col>
+        );
+    }
+
     private renderAdvancedBlock(): JSX.Element {
         const { activeFileManagerTab, projectId } = this.state;
 
@@ -907,6 +942,8 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                     items={[{
                         key: '1',
                         label: <Text className='cvat-title'>Advanced configuration</Text>,
+                        // the form must exist even when collapsed, it keeps the frame range of the video sampling block
+                        forceRender: true,
                         children: (
                             <AdvancedConfigurationForm
                                 activeFileManagerTab={activeFileManagerTab}
@@ -918,6 +955,7 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                                 sourceStorageLocation={sourceStorageLocation}
                                 targetStorageLocation={targetStorageLocation}
                                 onChangeSortingMethod={this.handleSortingMethodChange}
+                                onChangeFrameRange={this.handleFormFrameRangeChange}
                                 onChangeUseProjectSourceStorage={this.handleUseProjectSourceStorageChange}
                                 onChangeUseProjectTargetStorage={this.handleUseProjectTargetStorageChange}
                                 onChangeSourceStorageLocation={(value: StorageLocation) => {
@@ -1050,6 +1088,7 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                 {this.renderSubsetBlock()}
                 {this.renderLabelsBlock()}
                 {this.renderFilesBlock()}
+                {this.renderVideoSamplingBlock()}
                 {this.renderAdvancedBlock()}
                 {this.renderQualityBlock()}
 

@@ -139,7 +139,7 @@ si `advancedConfigurationComponent.current` es `null`, se usa `state.advanced` (
 ### 2.7 Miniaturas
 
 - Un `<video>` oculto, con la misma URL de objeto (`URL.createObjectURL(file)`), `muted` y `preload='auto'`.
-- N = `clamp(round(anchoTira / 96), 8, 24)` miniaturas repartidas a lo largo del vídeo **entero** (no del recorte),
+- 16 miniaturas repartidas a lo largo del vídeo **entero** (no del recorte),
   para poder mover las asas sobre ellas.
 - Se generan **una a una** (seek → `seeked` → `drawImage` en un canvas de 96 px de alto → `toBlob`) y se pintan según
   llegan. Si cambia el archivo o se desmonta el bloque, se cancela con un `AbortController`.
@@ -282,13 +282,15 @@ comprobar el número de fotogramas del job. No bloquea la fase 1.
 Igual que en `PLAN-timeline-ids.md` §6 (webpack en `localhost:3000` contra el backend en `8080`, `lint` y
 `ForkTsChecker`, `git -c safe.directory=…`).
 
-**Antes de empezar:** la rama actual es `feat/track-timeline` y tiene cambios sin commitear en `canvas-layout.tsx`,
-`track-timeline.tsx` y `use-timeline-rows.ts`. Hay que commitearlos o guardarlos con `stash` y crear
-`feat/video-sampling` desde `develop`, para que las dos funciones vayan en ramas y PRs separados.
+**Rama:** `feat/video-sampling` sale de `develop`, que ya incluye el timeline (PR #1), así que las dos funciones van en
+ramas y PRs separados.
+
+**Tests:** `node --test cvat-ui/src/utils/video-sampling.test.ts cvat-ui/src/utils/mp4-info.test.ts`. Con
+`MP4_INFO_SAMPLE=<ruta a un vídeo>` se compara además un vídeo real con `ffprobe`.
 
 ## 7. Pasos de implementación (en orden, un commit cada uno)
 
-1. Crear la rama `feat/video-sampling` desde `develop` (tras dejar limpio `feat/track-timeline`).
+1. Crear la rama `feat/video-sampling` desde `develop`.
 2. `video-sampling.ts` + tests en verde.
 3. Archivos de prueba MP4 + `mp4-info.ts` + tests en verde, incluido el caso del vídeo real (§5.1 punto 7).
 4. Enganches del formulario: `setFrameRange`, `onChangeFrameRange` y `forceRender`. Comprobar §5.2 puntos 5 y 6 con un
@@ -305,7 +307,8 @@ Igual que en `PLAN-timeline-ids.md` §6 (webpack en `localhost:3000` contra el b
 - Un solo `<video>` oculto para las miniaturas; *seeks* en serie, nunca en paralelo.
 - Miniaturas de 96 px de alto como `Blob`, no `dataURL` (menos memoria y sin cadenas enormes en React).
 - El recuento y los avisos son aritmética: se recalculan en cada movimiento de asa sin coste.
-- `setFrameRange` hacia el formulario con *throttle* de 100 ms mientras se arrastra.
+- Mientras se arrastra un asa, el rango vive en el estado local del bloque y el vídeo solo atiende el último *seek*
+  pedido; el formulario se actualiza una vez, al soltar (`onChangeComplete`).
 
 ## 9. Riesgos y cómo se cubren
 
