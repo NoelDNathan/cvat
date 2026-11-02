@@ -83,7 +83,8 @@ Con los datos de `avcC` se construye la cadena exacta del códec (p. ej. `avc1.6
 `video.canPlayType('video/mp4; codecs="…"')`. Si devuelve `''`, el bloque pasa a **modo solo datos**: ficha técnica,
 recorte por números (con la barra pero sin miniaturas) y recuento. En ese caso se muestra este aviso:
 
-> This video is 10-bit H.264, which browsers can't preview and which is slow to decode on the server.
+> This video is 10-bit H.264, which is slow to decode on the server and not supported by some browsers.
+> (Chrome 2026 en Windows sí lo reproduce por software: el aviso sale siempre, el modo solo datos solo si falla.)
 > Converting it to 8-bit is recommended: `ffmpeg -i in.mp4 -vf format=yuv420p -c:v libx264 -crf 20 out.mp4`
 
 ### 2.4 Disposición

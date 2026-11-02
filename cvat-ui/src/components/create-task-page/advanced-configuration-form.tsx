@@ -275,7 +275,12 @@ class AdvancedConfigurationForm extends React.PureComponent<Props> {
 
     public setFrameRange(values: FrameRangeFormValues): void {
         if (this.formRef.current) {
-            this.formRef.current.setFieldsValue(values);
+            // missing keys must clear the fields, setFieldsValue() skips them
+            this.formRef.current.setFieldsValue({
+                startFrame: values.startFrame,
+                stopFrame: values.stopFrame,
+                frameStep: values.frameStep,
+            });
             // revalidate to clear errors left by previous values, invalid values are shown by the form itself
             this.formRef.current.validateFields(FRAME_RANGE_FIELDS).catch(() => {});
         }
