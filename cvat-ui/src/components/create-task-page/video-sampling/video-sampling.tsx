@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import Alert from 'antd/lib/alert';
 import Button from 'antd/lib/button';
+import Checkbox, { CheckboxChangeEvent } from 'antd/lib/checkbox';
 import InputNumber from 'antd/lib/input-number';
 import Segmented from 'antd/lib/segmented';
 import Spin from 'antd/lib/spin';
@@ -28,6 +29,10 @@ interface Props {
     // values of the frame range fields of the advanced configuration form
     frameRange: FrameRangeFormValues;
     onChange(frameRange: FrameRangeFormValues): void;
+    convertVideoTo8bit: boolean;
+    // the server can not convert a video uploaded together with a manifest
+    canConvertVideo: boolean;
+    onChangeConvertVideoTo8bit(value: boolean): void;
 }
 
 const THUMBNAIL_COUNT = 16;
@@ -60,7 +65,9 @@ function describeOutput(range: FrameRange, fps: number): string {
 }
 
 function VideoSampling(props: Props): JSX.Element {
-    const { file, frameRange, onChange } = props;
+    const {
+        file, frameRange, onChange, convertVideoTo8bit, canConvertVideo, onChangeConvertVideoTo8bit,
+    } = props;
     const {
         status, info, url, canPreview,
     } = useVideoInfo(file);
@@ -94,7 +101,13 @@ function VideoSampling(props: Props): JSX.Element {
         if (info && Object.values(frameRange).some((value) => value !== undefined && value !== '')) {
             onChange(rangeToFormValues(formValuesToRange(frameRange, info.frameCount), info.frameCount));
         }
-    }, [info]);
+
+        // the conversion is suggested for videos which are slow to decode
+        onChangeConvertVideoTo8bit(!!info && info.bitDepth > 8 && canConvertVideo);
+    }, [info, canConvertVideo]);
+
+    // the option belongs to this video, it must not stay enabled when the block is hidden
+    useEffect(() => () => onChangeConvertVideoTo8bit(false), []);
 
     const range = useMemo(() => (
         info ? formValuesToRange(frameRange, info.frameCount) : null
@@ -278,6 +291,18 @@ function VideoSampling(props: Props): JSX.Element {
             {warnings.map((warning) => (
                 <Alert key={warning.key} type='warning' showIcon message={warning.message} />
             ))}
+            {info.bitDepth > 8 && (
+                <Checkbox
+                    className='cvat-video-sampling-convert'
+                    checked={convertVideoTo8bit}
+                    disabled={!canConvertVideo}
+                    onChange={(event: CheckboxChangeEvent) => onChangeConvertVideoTo8bit(event.target.checked)}
+                >
+                    {canConvertVideo ?
+                        'Convert to 8-bit H.264 on the server before creating the task (all frames are kept)' :
+                        'Converting to 8-bit H.264 is not available when a manifest file is uploaded'}
+                </Checkbox>
+            )}
         </div>
     );
 }

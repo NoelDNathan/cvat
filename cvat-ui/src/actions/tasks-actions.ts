@@ -255,6 +255,9 @@ ThunkAction {
         if (data.advanced.copyData) {
             description.copy_data = data.advanced.copyData;
         }
+        if (data.convertVideoTo8bit) {
+            description.convert_video_to_8bit = true;
+        }
         if (data.subset) {
             description.subset = data.subset;
         }

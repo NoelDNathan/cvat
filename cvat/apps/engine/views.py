@@ -1444,6 +1444,7 @@ class TaskViewSet(
                 data["use_zip_chunks"] = serializer.validated_data["use_zip_chunks"]
                 data["use_cache"] = serializer.validated_data["use_cache"]
                 data["copy_data"] = serializer.validated_data["copy_data"]
+                data["convert_video_to_8bit"] = serializer.validated_data["convert_video_to_8bit"]
 
                 if data["use_cache"]:
                     self._object.data.storage_method = StorageMethodChoice.CACHE

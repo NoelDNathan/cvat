@@ -207,9 +207,8 @@ export function samplingWarnings(info: SamplingVideoInfo, range: FrameRange): Sa
     if (info.bitDepth > 8) {
         warnings.push({
             key: 'bit_depth',
-            message: `The video is ${info.bitDepth}-bit, which is slow to decode on the server and ` +
-                'is not supported by some browsers. Converting it to 8-bit is recommended: ' +
-                'ffmpeg -i in.mp4 -vf format=yuv420p -c:v libx264 -crf 20 out.mp4',
+            message: `The video is ${info.bitDepth}-bit, which is about 2-3 times slower to decode ` +
+                'on the server and is not supported by some browsers',
         });
     }
 

@@ -324,6 +324,32 @@ ramas y PRs separados.
 | `job_file_mapping` no admite rango ni paso (`task.py:376-385`) | Ese modo solo se usa por API/CLI; si en la UI llegara a combinarse, el servidor ya devuelve el error |
 | Conflictos al actualizar desde upstream | Código nuevo aislado; 2 archivos existentes con cambios pequeños |
 
+## 9b. Conversión a 8 bits en el servidor (añadida tras la fase 1)
+
+Mediciones con `parte1-1m30.mp4` (1080p, 29.97 fps, H.264 High 10) dentro de la imagen `cvat/server:dev`:
+
+| | Decodificar 600 fotogramas | Tamaño (vídeo entero) |
+|---|---|---|
+| Original 10 bits | 16–23 s | 120 MB |
+| Convertido (`libopenh264`, QP 20) | 7,3 s | 166 MB, PSNR 38–41 dB |
+
+Prueba completa (tarea de prueba `test-10bit-conversion`, 10 fps): conversión de 1799 fotogramas en ~89 s en el worker
+de importación, tarea de 600 fotogramas (`stop_frame` 1797, `step=3`) tal como predice el bloque, y el `raw/` de la
+tarea queda en H.264 Constrained Baseline `yuv420p`.
+
+- **API:** campo `convert_video_to_8bit` (booleano, `write_only`) en `DataSerializer`, como `copy_data`.
+- **Servidor:** `cvat/apps/engine/video_conversion.py`. En `initialize_task`, tras `av_scan_paths`, convierte el
+  único vídeo con PyAV + `libopenh264` (el mismo codificador que `Mpeg4ChunkWriter`; `libx264` si existiera). Conserva
+  todos los fotogramas (la numeración no cambia), aplica la rotación de los metadatos igual que `VideoReader`, descarta
+  el audio y mantiene el nombre del archivo. Con *Connected file share* sin copia escribe en el directorio de la tarea y
+  pasa `storage` a `LOCAL` (mismo patrón que los archivos comprimidos). Rechaza la conversión si hay manifiesto y por
+  encima del límite de resolución de `openh264`. El estado de la creación muestra el porcentaje.
+- **UI:** casilla en el bloque, visible y marcada por defecto si el vídeo es de más de 8 bits; desactivada si se sube un
+  manifiesto. Se envía como `convertVideoTo8bit` en `CreateTaskData` → `convert_video_to_8bit`.
+- **Tests:** `cvat/apps/engine/tests/test_video_conversion.py` (10 bits → 8 bits, tamaños impares, rotación, share,
+  manifiesto, archivo roto).
+- **Coste:** la conversión va a ~1× tiempo real en 8 núcleos; el job de importación tiene un límite de 4 h.
+
 ## 10. Fases siguientes (esbozo)
 
 - Botón «Split into jobs of N frames» que rellene *Segment size* según el recuento y la resolución.

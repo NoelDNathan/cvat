@@ -49,6 +49,8 @@ export interface CreateTaskData {
     files: Files;
     activeFileManagerTab: TabName;
     cloudStorageId: number | null;
+    // set by the video sampling block, the server converts the video before processing it
+    convertVideoTo8bit?: boolean;
 }
 
 enum SupportedShareTypes {
@@ -96,6 +98,7 @@ const defaultState: State = {
     },
     activeFileManagerTab: 'local',
     cloudStorageId: null,
+    convertVideoTo8bit: false,
     multiTasks: [],
     frameRange: {},
     uploadFileErrorMessage: '',
@@ -326,6 +329,10 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
 
     private handleFormFrameRangeChange = (frameRange: FrameRangeFormValues): void => {
         this.setState({ frameRange });
+    };
+
+    private handleConvertVideoTo8bitChange = (convertVideoTo8bit: boolean): void => {
+        this.setState({ convertVideoTo8bit });
     };
 
     private focusToForm = (): void => {
@@ -904,9 +911,12 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
 
     private renderVideoSamplingBlock(): JSX.Element | null {
         const { many } = this.props;
-        const { activeFileManagerTab, files, frameRange } = this.state;
+        const {
+            activeFileManagerTab, files, frameRange, convertVideoTo8bit,
+        } = this.state;
 
         const mediaFiles = files.local.filter((file: File) => !file.name.endsWith('.jsonl'));
+        const hasManifest = mediaFiles.length !== files.local.length;
         if (many || activeFileManagerTab !== 'local' || mediaFiles.length !== 1 ||
             getFileContentType(mediaFiles[0]) !== SupportedShareTypes.VIDEO) {
             return null;
@@ -918,6 +928,9 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                     file={mediaFiles[0]}
                     frameRange={frameRange}
                     onChange={this.handleVideoSamplingChange}
+                    convertVideoTo8bit={!!convertVideoTo8bit}
+                    canConvertVideo={!hasManifest}
+                    onChangeConvertVideoTo8bit={this.handleConvertVideoTo8bitChange}
                 />
             </Col>
         );

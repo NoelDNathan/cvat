@@ -886,6 +886,9 @@ export function implementTask(Task: typeof TaskClass): typeof TaskClass {
                 ...(typeof this.frameFilter !== 'undefined' ? { frame_filter: this.frameFilter } : {}),
                 ...(typeof this.dataChunkSize !== 'undefined' ? { chunk_size: this.dataChunkSize } : {}),
                 ...(typeof this.copyData !== 'undefined' ? { copy_data: this.copyData } : {}),
+                ...(typeof this.convertVideoTo8bit !== 'undefined' ? {
+                    convert_video_to_8bit: this.convertVideoTo8bit,
+                } : {}),
                 ...(typeof this.cloudStorageId !== 'undefined' ? { cloud_storage_id: this.cloudStorageId } : {}),
                 ...(fields?.validation_params ? { validation_params: fields.validation_params } : {}),
             };

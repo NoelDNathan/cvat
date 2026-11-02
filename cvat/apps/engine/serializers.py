@@ -2865,6 +2865,15 @@ class DataSerializer(serializers.ModelSerializer):
             the file share availability
         """),
     )
+    convert_video_to_8bit = serializers.BooleanField(
+        default=False,
+        write_only=True,
+        help_text=textwrap.dedent("""\
+            Convert the uploaded video to 8-bit H.264 before processing it.
+            Useful for videos with a higher bit depth (e.g. H.264 High 10), which are slow to decode.
+            All the frames are kept. Can't be used together with a manifest file.
+        """),
+    )
     cloud_storage_id = serializers.IntegerField(
         write_only=True,
         allow_null=True,
@@ -2923,6 +2932,7 @@ class DataSerializer(serializers.ModelSerializer):
             "cloud_storage_id",
             "use_cache",
             "copy_data",
+            "convert_video_to_8bit",
             "storage_method",
             "sorting_method",
             "filename_pattern",
@@ -3062,7 +3072,7 @@ class DataSerializer(serializers.ModelSerializer):
         validated_data.pop("upload_file_order", None)  # optional, not present in Data
         validated_data.pop("server_files_exclude", None)  # optional, not present in Data
 
-        for extra_key in {"use_zip_chunks", "use_cache", "copy_data"}:
+        for extra_key in {"use_zip_chunks", "use_cache", "copy_data", "convert_video_to_8bit"}:
             validated_data.pop(extra_key)
 
         files = {
