@@ -123,6 +123,7 @@ export enum AnnotationActionTypes {
     COLLAPSE_APPEARANCE = 'COLLAPSE_APPEARANCE',
     COLLAPSE_OBJECT_ITEMS = 'COLLAPSE_OBJECT_ITEMS',
     ACTIVATE_OBJECT = 'ACTIVATE_OBJECT',
+    PIN_OBJECT = 'PIN_OBJECT',
     SELECT_OBJECTS = 'SELECT_OBJECTS',
     COPY_SELECTION = 'COPY_SELECTION',
     UPDATE_EDITED_STATE = 'UPDATE_EDITED_STATE',
@@ -979,6 +980,15 @@ export function activateObject(
             return;
         }
 
+        // a pinned object visible on the frame keeps the focus, other objects are activated only after a click
+        const { pinnedStateID, states } = state.annotation.annotations;
+        if (
+            pinnedStateID !== null && activatedStateID !== null && activatedStateID !== pinnedStateID &&
+            states.some((objectState: ObjectState) => objectState.clientID === pinnedStateID)
+        ) {
+            return;
+        }
+
         dispatch({
             type: AnnotationActionTypes.ACTIVATE_OBJECT,
             payload: {
@@ -987,6 +997,22 @@ export function activateObject(
                 activatedAttributeID,
             },
         });
+    };
+}
+
+export function pinObject(
+    pinnedStateID: number | null,
+    activatedElementID: number | null = null,
+): ThunkAction<void> {
+    return (dispatch: ThunkDispatch): void => {
+        dispatch({
+            type: AnnotationActionTypes.PIN_OBJECT,
+            payload: { pinnedStateID },
+        });
+
+        if (pinnedStateID !== null) {
+            dispatch(activateObject(pinnedStateID, activatedElementID, null));
+        }
     };
 }
 

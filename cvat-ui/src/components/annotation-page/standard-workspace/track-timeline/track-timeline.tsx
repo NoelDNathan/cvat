@@ -16,7 +16,9 @@ import Text from 'antd/lib/typography/Text';
 import { Attribute, Label } from 'cvat-core-wrapper';
 import { Chapter } from 'cvat-core/src/frames';
 import { ActiveControl, ColorBy, CombinedState } from 'reducers';
-import { activateObject, changeFrameAsync, switchPlay } from 'actions/annotation-actions';
+import {
+    activateObject, changeFrameAsync, pinObject, switchPlay,
+} from 'actions/annotation-actions';
 import { registerComponentShortcuts } from 'actions/shortcuts-actions';
 import { getCVATStore } from 'cvat-store';
 import CVATTooltip from 'components/common/cvat-tooltip';
@@ -192,7 +194,7 @@ function TrackTimeline(): JSX.Element {
         // the object must exist in the states of the new frame before it can be activated
         await dispatch(changeFrameAsync(clamp(toFrame, startFrame, stopFrame)));
         if (clientID !== null) {
-            dispatch(activateObject(clientID, null, null));
+            dispatch(pinObject(clientID));
         }
     }, [startFrame, stopFrame]);
 

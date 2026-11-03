@@ -45,6 +45,7 @@ import {
     sliceAnnotationsAsync,
     splitAnnotationsAsync,
     activateObject,
+    pinObject,
     updateCanvasContextMenu,
     updateCanvasHistory,
     fetchAnnotationsAsync,
@@ -84,11 +85,16 @@ import CanvasTipsComponent from './canvas-hints';
 
 const cvat = getCore();
 const MAX_DISTANCE_TO_OPEN_SHAPE = 50;
+// workspaces where objects are activated on hover, so a clicked object is pinned to keep the focus
+const HOVER_WORKSPACES = [Workspace.STANDARD, Workspace.REVIEW, Workspace.SINGLE_SHAPE];
+// a longer mouse move on the background is panning, it does not release the pinned object
+const MAX_CLICK_SHIFT = 3;
 
 interface StateToProps {
     canvasInstance: Canvas | Canvas3d | null;
     jobInstance: any;
     activatedStateID: number | null;
+    pinnedStateID: number | null;
     activatedElementID: number | null;
     activatedAttributeID: number | null;
     selectedStatesID: number[];
@@ -156,6 +162,7 @@ interface DispatchToProps {
     onJoinAnnotations(states: ObjectState[], points: number[][]): void;
     onSliceAnnotations(state: ObjectState, results: number[][]): void;
     onActivateObject: (activatedStateID: number | null, activatedElementID: number | null) => void;
+    onPinObject(pinnedStateID: number | null, activatedElementID?: number | null): void;
     onExpandObject(objectState: ObjectState): void;
     onOpenLayerStack(sidebarCollapsed: boolean): void;
     onChangeBrightnessLevel(level: number): void;
@@ -189,6 +196,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
             annotations: {
                 states: annotations,
                 activatedStateID,
+                pinnedStateID,
                 activatedElementID,
                 activatedAttributeID,
                 selectedStatesID,
@@ -242,6 +250,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
         canvasIsReady,
         frame,
         activatedStateID,
+        pinnedStateID,
         activatedElementID,
         activatedAttributeID,
         selectedStatesID,
@@ -373,6 +382,9 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
 
             dispatch(activateObject(activatedStateID, activatedElementID, null));
         },
+        onPinObject(pinnedStateID: number | null, activatedElementID: number | null = null): void {
+            dispatch(pinObject(pinnedStateID, activatedElementID));
+        },
         onExpandObject(objectState: ObjectState): void {
             dispatch(collapseObjectItems([objectState], false));
         },
@@ -433,6 +445,9 @@ type Props = StateToProps & DispatchToProps;
 class CanvasWrapperComponent extends React.PureComponent<Props> {
     private debouncedUpdate = debounce(this.updateCanvas.bind(this), 250, { leading: true });
     private canvasTipsRef = React.createRef<CanvasTipsComponent>();
+    private pinReleasePosition: [number, number] | null = null;
+    // screen position of the pinned object on the previous frame, the image is moved to keep it there
+    private followAnchor: { clientID: number; frame: number; x: number; y: number } | null = null;
 
     public componentDidMount(): void {
         const {
@@ -647,6 +662,9 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
             prevProps.hiddenZLayers !== hiddenZLayers ||
             prevProps.renderData !== renderData
         ) {
+            if (prevProps.frame !== this.props.frame) {
+                this.rememberFollowAnchor();
+            }
             this.updateCanvas();
         } else if (prevProps.imageFilters !== imageFilters) {
             // In case of frequent image filters changes, we apply debounced canvas update
@@ -868,7 +886,8 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
 
     private onCanvasMouseDown = (e: MouseEvent): void => {
         const {
-            workspace, activatedStateID, selectedStatesID, onActivateObject, onSelectObjects, activeControl,
+            workspace, activatedStateID, pinnedStateID, selectedStatesID, onActivateObject, onPinObject,
+            onSelectObjects, activeControl,
         } = this.props;
         const shapeElement = (e.target as Element)?.closest?.('.cvat_canvas_shape');
         const selectionBox = (e.target as Element)?.closest?.('.cvat_canvas_selected_objects_box');
@@ -892,16 +911,30 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
                 e.preventDefault();
             }
 
-            if (activatedStateID !== null && workspace !== Workspace.ATTRIBUTES) {
+            if (pinnedStateID !== null) {
+                this.pinReleasePosition = [e.clientX, e.clientY];
+            } else if (activatedStateID !== null && workspace !== Workspace.ATTRIBUTES) {
                 onActivateObject(null, null);
             }
         }
     };
 
-    private onCanvasClicked = (): void => {
+    private onCanvasClicked = (e: MouseEvent): void => {
         const { canvasInstance } = this.props as { canvasInstance: Canvas };
         if (!canvasInstance.html().contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
+        }
+
+        const { pinReleasePosition } = this;
+        this.pinReleasePosition = null;
+        if (pinReleasePosition && Math.hypot(
+            e.clientX - pinReleasePosition[0], e.clientY - pinReleasePosition[1],
+        ) <= MAX_CLICK_SHIFT) {
+            const { activatedStateID, onPinObject, onActivateObject } = this.props;
+            onPinObject(null);
+            if (activatedStateID !== null) {
+                onActivateObject(null, null);
+            }
         }
     };
 
@@ -953,8 +986,15 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
     };
 
     private onCanvasShapeClicked = (e: any): void => {
-        const { onActivateObject, onExpandObject } = this.props;
-        onActivateObject(e.detail.state.clientID, null);
+        const {
+            workspace, activatedStateID, activatedElementID, onActivateObject, onPinObject, onExpandObject,
+        } = this.props;
+        const { clientID } = e.detail.state;
+        if (HOVER_WORKSPACES.includes(workspace)) {
+            onPinObject(clientID, clientID === activatedStateID ? activatedElementID : null);
+        } else {
+            onActivateObject(clientID, null);
+        }
         scrollAndExpandState(e.detail.state, onExpandObject);
     };
 
@@ -1007,7 +1047,7 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
             activatedStateID, activatedElementID, workspace, onActivateObject, selectedStatesID,
         } = this.props;
 
-        if (![Workspace.STANDARD, Workspace.REVIEW, Workspace.SINGLE_SHAPE].includes(workspace)) {
+        if (!HOVER_WORKSPACES.includes(workspace)) {
             return;
         }
 
@@ -1095,7 +1135,58 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
         const { onSetupCanvas } = this.props;
         onSetupCanvas();
         this.activateOnCanvas();
+        this.followPinnedObject();
     };
+
+    private shapeScreenCenter(clientID: number): [number, number] | null {
+        const shape = window.document.getElementById(`cvat_canvas_shape_${clientID}`);
+        const rect = shape?.getBoundingClientRect();
+        if (!rect || (!rect.width && !rect.height)) {
+            return null;
+        }
+
+        return [rect.left + rect.width / 2, rect.top + rect.height / 2];
+    }
+
+    private rememberFollowAnchor(): void {
+        const { pinnedStateID, frame } = this.props;
+        const { canvasInstance } = this.props as { canvasInstance: Canvas };
+        this.followAnchor = null;
+        if (pinnedStateID === null || !canvasInstance) {
+            return;
+        }
+
+        // follow the object only if the user sees it now
+        const center = this.shapeScreenCenter(pinnedStateID);
+        const view = canvasInstance.html().getBoundingClientRect();
+        if (center && center[0] >= view.left && center[0] <= view.right &&
+            center[1] >= view.top && center[1] <= view.bottom) {
+            this.followAnchor = {
+                clientID: pinnedStateID, frame, x: center[0], y: center[1],
+            };
+        }
+    }
+
+    private followPinnedObject(): void {
+        const { pinnedStateID, frame } = this.props;
+        const { canvasInstance } = this.props as { canvasInstance: Canvas };
+        const anchor = this.followAnchor;
+        const renderedFrame = canvasInstance.html().getAttribute('data-frame-number');
+        if (!anchor || anchor.frame !== frame || (renderedFrame !== null && +renderedFrame !== frame)) {
+            return;
+        }
+
+        this.followAnchor = null;
+        if (anchor.clientID !== pinnedStateID) {
+            return;
+        }
+
+        // the object is not drawn when it has left the camera, the image stays where it is
+        const center = this.shapeScreenCenter(anchor.clientID);
+        if (center) {
+            canvasInstance.move(anchor.y - center[1], anchor.x - center[0]);
+        }
+    }
 
     private onCanvasCancel = (): void => {
         const { onResetCanvas, onUpdateEditedObject } = this.props;
@@ -1311,7 +1402,9 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
             onSwitchSnapToPoint,
             onOpenLayerStack,
             onActivateObject,
+            onPinObject,
             onExpandObject,
+            workspace,
         } = this.props;
         const { canvasInstance } = this.props as { canvasInstance: Canvas };
 
@@ -1335,7 +1428,11 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
                 }
                 const nextState = filteredStates[nextIndex];
                 if (nextState && nextState.clientID !== null && nextState.clientID !== activatedStateID) {
-                    onActivateObject(nextState.clientID, null);
+                    if (HOVER_WORKSPACES.includes(workspace)) {
+                        onPinObject(nextState.clientID);
+                    } else {
+                        onActivateObject(nextState.clientID, null);
+                    }
                     if (nextState.objectType !== ObjectType.TAG && canvasInstance) {
                         canvasInstance.focus(nextState.clientID, focusedObjectPadding);
                     }

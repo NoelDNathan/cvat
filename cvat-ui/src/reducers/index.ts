@@ -985,6 +985,8 @@ export interface AnnotationState {
     editing: EditingState;
     annotations: {
         activatedStateID: number | null;
+        // an object clicked by the user, it stays activated across frames and hover does not replace it
+        pinnedStateID: number | null;
         activatedElementID: number | null;
         activatedAttributeID: number | null;
         selectedStatesID: number[];

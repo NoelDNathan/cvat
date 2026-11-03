@@ -31,7 +31,15 @@ function getAnnotationsRenderData(states: ObjectState[], filters: object[]): Ren
     };
 }
 
-function updateActivatedStateID(newStates: ObjectState[], prevActivatedStateID: number | null): number | null {
+function updateActivatedStateID(
+    newStates: ObjectState[],
+    prevActivatedStateID: number | null,
+    pinnedStateID: number | null,
+): number | null {
+    if (pinnedStateID !== null && newStates.some((_state: ObjectState) => _state.clientID === pinnedStateID)) {
+        return pinnedStateID;
+    }
+
     return prevActivatedStateID === null ||
         newStates.some((_state: ObjectState) => _state.clientID === prevActivatedStateID) ?
         prevActivatedStateID :
@@ -142,6 +150,7 @@ const defaultState: AnnotationState = {
     },
     annotations: {
         activatedStateID: null,
+        pinnedStateID: null,
         activatedElementID: null,
         activatedAttributeID: null,
         selectedStatesID: [],
@@ -387,7 +396,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
             };
         }
         case AnnotationActionTypes.CHANGE_FRAME_SUCCESS: {
-            const { activatedStateID } = state.annotations;
+            const { activatedStateID, pinnedStateID } = state.annotations;
             const {
                 number,
                 data,
@@ -424,7 +433,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                 },
                 annotations: {
                     ...state.annotations,
-                    activatedStateID: updateActivatedStateID(states, activatedStateID),
+                    activatedStateID: updateActivatedStateID(states, activatedStateID, pinnedStateID),
                     selectedStatesID,
                     highlightedConflict: null,
                     states,
@@ -732,6 +741,16 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                 },
             };
         }
+        case AnnotationActionTypes.PIN_OBJECT: {
+            const { pinnedStateID } = action.payload;
+            return {
+                ...state,
+                annotations: {
+                    ...state.annotations,
+                    pinnedStateID,
+                },
+            };
+        }
         case AnnotationActionTypes.SELECT_OBJECTS: {
             const { selectedStatesID: requestedStatesID, history } = action.payload;
             const hiddenZLayers = state.annotations.zLayer.hiddenByFrame.get(state.player.frame.number) ||
@@ -752,6 +771,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                     selectedStatesID,
                     ...(selectedStatesID.length ? {
                         activatedStateID: null,
+                        pinnedStateID: null,
                         activatedElementID: null,
                         activatedAttributeID: null,
                     } : {}),
@@ -813,6 +833,8 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                     ...state.annotations,
                     history,
                     activatedStateID: null,
+                    pinnedStateID: state.annotations.pinnedStateID === objectState.clientID ?
+                        null : state.annotations.pinnedStateID,
                     selectedStatesID: state.annotations.selectedStatesID.filter(
                         (clientID: number): boolean => clientID !== objectState.clientID,
                     ),
@@ -1066,7 +1088,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
             };
         }
         case AnnotationActionTypes.FETCH_ANNOTATIONS_SUCCESS: {
-            const { activatedStateID } = state.annotations;
+            const { activatedStateID, pinnedStateID } = state.annotations;
             const { states, history } = action.payload;
             const [minZ, maxZ] = computeZRange(states);
             const currentZLayer = state.annotations.initialized ? state.annotations.zLayer.cur : maxZ;
@@ -1085,7 +1107,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                 ...state,
                 annotations: {
                     ...state.annotations,
-                    activatedStateID: updateActivatedStateID(states, activatedStateID),
+                    activatedStateID: updateActivatedStateID(states, activatedStateID, pinnedStateID),
                     selectedStatesID,
                     states,
                     renderData: getAnnotationsRenderData(states, state.annotations.filters),
@@ -1252,6 +1274,7 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                     states: nextStates,
                     renderData: getAnnotationsRenderData(nextStates, state.annotations.filters),
                     activatedStateID: null,
+                    pinnedStateID: null,
                     activatedAttributeID: null,
 
                 },

@@ -44,6 +44,7 @@ interface Props {
     zOrder: number;
     activate(activeElementID?: number): void;
     activateSingle(): void;
+    pin(): void;
     toggleSelection(): void;
     selectRange(): void;
     focusAndExpand(): void;
@@ -92,6 +93,7 @@ function ObjectItemComponent(props: Props): JSX.Element {
         isGroundTruth,
         activate,
         activateSingle,
+        pin,
         toggleSelection,
         selectRange,
         focusAndExpand,
@@ -158,9 +160,11 @@ function ObjectItemComponent(props: Props): JSX.Element {
                 event.preventDefault();
                 event.stopPropagation();
                 activateSingle();
+            } else if (!interactiveElement && objectType !== ObjectType.TAG) {
+                pin();
             }
         }
-    }, [activateSingle, multiSelectionSupported, objectType, selectRange, selectionActive, toggleSelection]);
+    }, [activateSingle, multiSelectionSupported, objectType, pin, selectRange, selectionActive, toggleSelection]);
 
     const onKeyDown = useCallback((event: React.KeyboardEvent): void => {
         if (multiSelectionSupported && ['Enter', ' '].includes(event.key) &&
