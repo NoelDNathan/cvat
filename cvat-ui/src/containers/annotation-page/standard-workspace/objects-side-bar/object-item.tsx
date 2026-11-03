@@ -14,6 +14,7 @@ import {
     updateActiveControl as updateActiveControlAction,
     copyShape as copyShapeAction,
     activateObject as activateObjectAction,
+    pinObject as pinObjectAction,
     switchPropagateVisibility as switchPropagateVisibilityAction,
     switchSimplifyVisibility as switchSimplifyVisibilityAction,
     removeObject as removeObjectAction,
@@ -74,6 +75,7 @@ interface DispatchToProps {
     changeFrame(frame: number): void;
     updateState(objectState: ObjectState): void;
     activateObject: (activatedStateID: number | null, activatedElementID: number | null) => void;
+    pinObject(pinnedStateID: number): void;
     removeObject: (objectState: ObjectState) => void;
     copyShape: (objectState: ObjectState) => void;
     switchPropagateVisibility: (visible: boolean) => void;
@@ -142,6 +144,9 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
         },
         activateObject(activatedStateID: number | null): void {
             dispatch(activateObjectAction(activatedStateID, null, null));
+        },
+        pinObject(pinnedStateID: number): void {
+            dispatch(pinObjectAction(pinnedStateID));
         },
         removeObject(objectState: any): void {
             dispatch(removeObjectAction(objectState, false));
@@ -356,6 +361,16 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
         }
     };
 
+    private pin = (): void => {
+        const {
+            objectState, ready, activeControl, pinObject,
+        } = this.props;
+
+        if (ready && activeControl === ActiveControl.CURSOR) {
+            pinObject(objectState.clientID as number);
+        }
+    };
+
     private activateSingle = (): void => {
         const {
             objectState, ready, activeControl, activateObject, selectObjects,
@@ -556,6 +571,7 @@ class ObjectItemContainer extends React.PureComponent<Props, State> {
                 colorBy={colorBy}
                 activate={this.activate}
                 activateSingle={this.activateSingle}
+                pin={this.pin}
                 toggleSelection={this.toggleSelection}
                 selectRange={this.selectRange}
                 focusAndExpand={this.focusAndExpand}

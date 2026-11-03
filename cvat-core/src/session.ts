@@ -943,6 +943,7 @@ export class Task extends Session {
     public readonly useZipChunks: boolean;
     public readonly useCache: boolean;
     public readonly copyData: boolean;
+    public readonly convertVideoTo8bit: boolean;
     public readonly cloudStorageId: number | null;
     public readonly sortingMethod: string;
 
@@ -1001,6 +1002,7 @@ export class Task extends Session {
             use_zip_chunks: undefined,
             use_cache: undefined,
             copy_data: undefined,
+            convert_video_to_8bit: undefined,
             sorting_method: undefined,
 
             validation_mode: null,
@@ -1187,6 +1189,9 @@ export class Task extends Session {
                 },
                 copyData: {
                     get: () => data.copy_data,
+                },
+                convertVideoTo8bit: {
+                    get: () => data.convert_video_to_8bit,
                 },
                 labels: {
                     get: () => [...data.labels],

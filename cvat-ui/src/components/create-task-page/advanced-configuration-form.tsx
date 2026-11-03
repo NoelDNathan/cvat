@@ -18,6 +18,7 @@ import { Store } from 'antd/lib/form/interface';
 import CVATTooltip from 'components/common/cvat-tooltip';
 import patterns from 'utils/validation-patterns';
 import { isInteger } from 'utils/validation';
+import { FrameRangeFormValues } from 'utils/video-sampling';
 import SourceStorageField from 'components/storage/source-storage-field';
 import TargetStorageField from 'components/storage/target-storage-field';
 
@@ -141,6 +142,7 @@ interface Props {
     onChangeSourceStorageLocation: (value: StorageLocation) => void;
     onChangeTargetStorageLocation: (value: StorageLocation) => void;
     onChangeSortingMethod(value: SortingMethod): void;
+    onChangeFrameRange?(values: FrameRangeFormValues): void;
     projectId: number | null;
     useProjectSourceStorage?: boolean;
     useProjectTargetStorage?: boolean;
@@ -172,6 +174,8 @@ const validateOverlapSize: RuleRender = ({ getFieldValue }): RuleObject => ({
         return Promise.resolve();
     },
 });
+
+const FRAME_RANGE_FIELDS = ['startFrame', 'stopFrame', 'frameStep'];
 
 const validateStopFrame: RuleRender = ({ getFieldValue }): RuleObject => ({
     validator(_: RuleObject, value?: string | number): Promise<void> {
@@ -268,6 +272,27 @@ class AdvancedConfigurationForm extends React.PureComponent<Props> {
             this.formRef.current.resetFields();
         }
     }
+
+    public setFrameRange(values: FrameRangeFormValues): void {
+        if (this.formRef.current) {
+            // missing keys must clear the fields, setFieldsValue() skips them
+            this.formRef.current.setFieldsValue({
+                startFrame: values.startFrame,
+                stopFrame: values.stopFrame,
+                frameStep: values.frameStep,
+            });
+            // revalidate to clear errors left by previous values, invalid values are shown by the form itself
+            this.formRef.current.validateFields(FRAME_RANGE_FIELDS).catch(() => {});
+        }
+    }
+
+    private handleValuesChange = (changedValues: Store): void => {
+        const { onChangeFrameRange } = this.props;
+        if (onChangeFrameRange && this.formRef.current &&
+            FRAME_RANGE_FIELDS.some((field) => field in changedValues)) {
+            onChangeFrameRange(this.formRef.current.getFieldsValue(FRAME_RANGE_FIELDS));
+        }
+    };
 
     private renderCopyDataCheckbox(): JSX.Element {
         return (
@@ -535,7 +560,12 @@ class AdvancedConfigurationForm extends React.PureComponent<Props> {
         const hasStorage = this.hasSection(AdvancedConfigurationSection.STORAGE);
 
         return (
-            <Form initialValues={getAdvancedConfigurationInitialValues(visibleSections)} ref={this.formRef} layout='vertical'>
+            <Form
+                initialValues={getAdvancedConfigurationInitialValues(visibleSections)}
+                ref={this.formRef}
+                layout='vertical'
+                onValuesChange={this.handleValuesChange}
+            >
                 {hasSorting && (
                     <Row>
                         <Col>{this.renderSortingMethodRadio()}</Col>

@@ -1,0 +1,92 @@
+// Copyright (C) CVAT.ai Corporation
+//
+// SPDX-License-Identifier: MIT
+
+@import 'base';
+
+.cvat-video-sampling {
+    display: flex;
+    flex-direction: column;
+    gap: $grid-unit-size;
+    margin-top: $grid-unit-size * 2;
+}
+
+.cvat-video-sampling-player-wrapper {
+    display: flex;
+    gap: $grid-unit-size * 2;
+    align-items: flex-start;
+}
+
+.cvat-video-sampling-player {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-height: $grid-unit-size * 45;
+    background: black;
+    border-radius: $border-radius-base;
+}
+
+.cvat-video-sampling-player-side {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: $grid-unit-size;
+    width: $grid-unit-size * 18;
+}
+
+.cvat-video-sampling-filmstrip {
+    .cvat-video-sampling-range.ant-slider {
+        margin: $grid-unit-size 0 0;
+    }
+}
+
+.cvat-video-sampling-thumbnails {
+    position: relative;
+    display: flex;
+    height: $grid-unit-size * 7;
+    overflow: hidden;
+    border-radius: $border-radius-base;
+    background: $border-color-1;
+    cursor: pointer;
+
+    > img,
+    > .cvat-video-sampling-thumbnail-placeholder {
+        flex: 1 1 0;
+        min-width: 0;
+        height: 100%;
+        object-fit: cover;
+        user-select: none;
+    }
+
+    > .cvat-video-sampling-thumbnail-placeholder {
+        border-right: 1px solid $background-color-1;
+    }
+}
+
+.cvat-video-sampling-excluded {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 55%);
+    pointer-events: none;
+}
+
+.cvat-video-sampling-playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: $border-color-hover;
+    pointer-events: none;
+}
+
+.cvat-video-sampling-step {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $grid-unit-size;
+    align-items: center;
+}
+
+.cvat-video-sampling-custom-step {
+    width: $grid-unit-size * 25;
+}

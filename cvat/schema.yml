@@ -8881,6 +8881,14 @@ components:
             Copy data from the server file share to CVAT during the task creation.
             This will create a copy of the data, making the server independent from
             the file share availability
+        convert_video_to_8bit:
+          type: boolean
+          writeOnly: true
+          default: false
+          description: |
+            Convert the uploaded video to 8-bit H.264 before processing it.
+            Useful for videos with a higher bit depth (e.g. H.264 High 10), which are slow to decode.
+            All the frames are kept. Can't be used together with a manifest file.
         storage_method:
           $ref: '#/components/schemas/StorageMethod'
         sorting_method:

@@ -31,6 +31,7 @@ interface Canvas {
     highlight(clientIDs: number[] | null, severity: HighlightSeverity | null): void;
     rotate(rotationAngle: number): void;
     focus(clientID: number, padding?: number): void;
+    move(topOffset: number, leftOffset: number): void;
     fit(): void;
     grid(stepX: number, stepY: number): void;
 
@@ -128,6 +129,10 @@ class CanvasImpl implements Canvas {
 
     public focus(clientID: number, padding = 0): void {
         this.model.focus(clientID, padding);
+    }
+
+    public move(topOffset: number, leftOffset: number): void {
+        this.model.move(topOffset, leftOffset);
     }
 
     public fit(): void {

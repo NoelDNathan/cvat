@@ -50,6 +50,7 @@ from cvat.apps.engine.media_io.frame_provider import TaskFrameProvider
 from cvat.apps.engine.rq import ImportRQMeta
 from cvat.apps.engine.task_validation import HoneypotFrameSelector
 from cvat.apps.engine.utils import av_scan_paths, format_list, get_path_size, take_by
+from cvat.apps.engine.video_conversion import convert_task_video
 from cvat.utils import django_database as db_utils
 from cvat.utils.http import PROXIES_FOR_UNTRUSTED_URLS, make_requests_session
 from cvat.utils.paths import join_untrusted_path, problem_with_untrusted_path
@@ -1764,6 +1765,15 @@ def initialize_task(
                 )
 
     av_scan_paths(upload_dir)
+
+    if data.get("convert_video_to_8bit") and media["video"] and not is_backup_restore:
+        upload_dir = convert_task_video(
+            db_data,
+            upload_dir=upload_dir,
+            video=media["video"][0],
+            has_manifest=bool(manifest_file),
+            update_status=update_status,
+        )
 
     # If something was uploaded to the raw directory, update content_size in the Data model
     # raw_data_dir and upload_dir are not always the same
